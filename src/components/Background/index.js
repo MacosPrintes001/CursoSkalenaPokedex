@@ -1,9 +1,9 @@
 import { BackgroundImage } from "./styles"
 
-function Background(){
-    return(
+function Background() {
+    return (
         <>
-            <BackgroundImage/>
+            <BackgroundImage />
         </>
     )
 }
