@@ -1,69 +1,121 @@
-import React, { useState, useEffect } from "react"
-import Background from "../../components/Background"
-import Navbar from "../../components/Navbar"
-import PokemonCard from "../../components/PokemonCard"
-import api from "../../services/api"
-import { CardContainer } from "./styles.js"
-
-
+import React, { useState, useEffect } from 'react'
+import { CardContainer, HomeContainer } from './styles'
+import Background from '../../components/Background'
+import Navbar from '../../components/Navbar'
+import PokemonCard from '../../components/PokemonCard'
+import api from '../../services/api'
+import InfiniteScroll from 'react-infinite-scroll-component'
+import Loading from '../../components/Loading'
 
 function Home() {
+    const [isLoading, setIsLoading] = useState(false)
+    const [pokemonName, setPokemonName] = useState([])
+    const [pokemonInfo, setPokemonInfo] = useState([])
+    const pokemonLimit = 20
+    const [pokemonOffSet, setPokemonOffSet] = useState(pokemonLimit)
 
-    const [isLoading, setIsLoading] = useState(false);
-    const [pokemonName, setPokemonName] = useState([]);
-    const [pokemonInfo, setpokemonInfo] = useState([]);
+    const handleGetPokemonName = (
+        async () => {
+            try {
+                setIsLoading(true)
 
-
-    // const handleGetPokemonStatus = (pokemons) => {
-    //     try {
-           
-          
-    //     } catch (error) {
-    //         console.error(error);
-    //     } finally {
-    //         setIsLoading(false);
-    //     }
-    // }
-
-    const handleGetPokemonName = async () => {
-        try {
-            setIsLoading(true);
-
-            const response = await api.get('pokemon', {
-                params: { limit: 10 }
-            })
-
-            if (response) {
-                setPokemonName(response.data.results);
-                handleGetPokemonStatus(response.data.results);
+                const response = await api.get('pokemon', {
+                    params: {
+                        limit: pokemonLimit,
+                    },
+                })
+                if (response) {
+                    setPokemonName(response.data.results)
+                    handleGetPokemonStats(response.data.results)
+                }
+            } catch (error) {
+                console.log(error)
             }
+        })
+
+    const handleGetPokemonStats = (pokemons) => {
+        try {
+            pokemons.map((pokemon) =>
+                api.get(`/pokemon/${pokemon.name}`)
+                    .then((response) => {
+                        const result = response.data
+                        setPokemonInfo((prevState) =>
+
+                            [...prevState, result].sort((a, b) => {
+                                return a.id - b.id
+                            })
+                        )
+                    })
+            )
 
         } catch (error) {
-            console.error(error)
+            console.log(error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
 
+
+    async function handleLoadNewPokemons() {
+        try {
+            setIsLoading(true)
+            const response = await api.get('pokemon', {
+                params: {
+                    limit: pokemonLimit,
+                    offset: pokemonOffSet
+                }
+            })
+            if (response) {
+                setPokemonName((prevState) => [...prevState, ...response.data.results])
+                handleGetPokemonStats(response.data.results)
+                setPokemonOffSet((prevState) => prevState + pokemonLimit)
+            }
+        }
+        catch (error) {
+            console.log(error)
+        }
+        finally {
+            setIsLoading(false)
         }
     }
 
 
     useEffect(() => {
-        console.log("Tela rodando");
-        handleGetPokemonName();
+        handleGetPokemonName()
+
     }, [])
+
+
+
     return (
         <div>
-            <Navbar />
-            <Background />
-            <CardContainer>
-                {
-                    isLoading? 'Loading...': <></>
-                }
-                {
-                    pokemonName.map((pokemon, index)=>
-                        (<PokemonCard code={pokemonInfo[index]?.id} name={pokemon.name} src={pokemonInfo[index].sprite.other['ifficial-artwork'].front_default}></PokemonCard>)
-                    )
-                }
-                <PokemonCard />
-            </CardContainer>
+
+            <InfiniteScroll
+                dataLength={pokemonInfo.length}
+                next={handleLoadNewPokemons}
+                hasMore={isLoading ? false : true}
+                scrollThreshold={0.9}
+                style={{ overflow: 'hidden' }}
+            >
+                <Background />
+                <HomeContainer>
+                    <Navbar />
+                    <CardContainer>
+
+                        {
+                            isLoading ? <Loading /> : <></>
+                        }
+                        {pokemonInfo && (
+                            pokemonName.map((pokemon, index) =>
+                                <PokemonCard key={index} code={pokemonInfo[index]?.id} name={pokemon?.name} src={pokemonInfo[index]?.sprites?.other['official-artwork']?.front_default} color={pokemonInfo[index]?.types} />
+                            )
+                        )
+                        }
+                    </CardContainer>
+                </HomeContainer>
+            </InfiniteScroll>
+
+
         </div>
     )
 }

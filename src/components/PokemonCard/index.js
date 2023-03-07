@@ -1,22 +1,25 @@
-import { CardContainer, Container, CardInfo, Code, Name, CardImage, Photo } from './styles'
+import { useTheme } from 'styled-components'
+import { Container, CardContainer, CardInfo, Code, Name, CardImage, Photo } from './styles'
 
-function PokemonCard(code, name, src) {
+function PokemonCard({ code, name, src, color, }) {
+    const theme = useTheme()
+
     return (
         <>
-            <Container>
+            <Container color={theme.color.backgroundType[color ? color[0].type.name : 'transparent']}>
                 <CardContainer>
                     <CardInfo>
-                        <Code> {code}</Code>
-                        <Name> {name}</Name>
+                        <Code>#{code}</Code>
+                        <Name>{name}</Name>
                     </CardInfo>
+
                 </CardContainer>
                 <CardImage>
-                    <Photo>{src}</Photo>
+                    <Photo src={src} />
                 </CardImage>
             </Container>
         </>
-
     )
 }
 
-export default PokemonCard;
+export default PokemonCard
